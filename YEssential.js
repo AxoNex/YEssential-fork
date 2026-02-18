@@ -22,8 +22,8 @@ const pluginpath = "./plugins/YEssential/";
 const datapath = "./plugins/YEssential/data/";
 const NAME = `YEssential`;
 const PluginInfo =`基岩版多功能基础插件 `;
-const version = "2.9.4";
-const regversion =[2,9,4];
+const version = "2.9.6";
+const regversion =[2,9,6];
 // const info = "§l§6[-YEST-] §r";
 const info = "§l§b[C] §r";
 const offlineMoneyPath = datapath+"/Money/offlineMoney.json";
@@ -1359,16 +1359,6 @@ function teleportPlayer(pl,player) {
         logger.error(e.stack);
     }
 }
-
-function getScoreMoney(pl) {
-    let ScoreMoney = pl.getScore(conf.get("Scoreboard"))
-    return  ScoreMoney.toString();
-}
-function getLLMoney(pl){
-    let LLMoney = pl.getMoney();
-    return LLMoney.toString();
-
-}
 // 金币信息显示函数
 function displayMoneyInfo(pl, target, isSelf = true) {
     if (!pl || !target) return "信息获取失败";
@@ -1385,12 +1375,12 @@ function displayMoneyInfo(pl, target, isSelf = true) {
     }
 }
 mc.listen("onJoin",(pl)=>{
+   //if (conf.get("wh").status == 1) return;
    try {
-        setTimeout(() => {
         // 初始化玩家数据
         homedata.init(pl.xuid, {});
-        rtpdata.init(pl.realName, {});
-        MoneyHistory.init(pl.realName, {});
+        rtpdata.init(pl.xuid, {});
+        MoneyHistory.init(pl.xuid, {});
         // 初始化金币
         if (conf.get("LLMoney") == 1) {
             let currentMoney = pl.getMoney();
@@ -1401,16 +1391,27 @@ mc.listen("onJoin",(pl)=>{
             let score = pl.getScore(conf.get("Scoreboard"));
             if (!score) pl.setScore(conf.get("Scoreboard"), 0);
         }
-         },1000)
         // 进入服务器公告显示
         if (conf.get("Notice").Join_ShowNotice == true) {
         setTimeout(() => {
-                if (!mc.getPlayer(pl.realName)) return;
-                if (noticeconf.get(String(pl.realName)) == 1) return;
+                if (!mc.getPlayer(pl.xuid)) return;
+                if (noticeconf.get(String(pl.xuid)) == 1) return;
                 if (!conf.get("Notice").EnableModule) return;
                 pl.runcmd("notice");
             }, 1000);
         }
+        if (pl.isOP()) {
+            return;
+        }
+        const xuid = pl.xuid;
+        if (pvpConfig.get(xuid) === undefined) {
+            pvpConfig.set(xuid, false);
+        }
+        let plname = pl.realName
+        pl.setGameMode(0)
+        setTimeout(() => {
+            mc.runcmdEx(`tp ${plname} ${plname + "_sp"}`)
+        }, 1000);
     } catch (error) {
         logger.error(`玩家 ${pl.realName} 加入事件处理失败: ${error.message}`);
     }
@@ -1474,14 +1475,6 @@ function initPvpModule() {
         out.success(info + (newState ? lang.get("pvp.is.on") : lang.get("pvp.is.off")));
     });
     pvp.setup();
-
-    // 3. 监听玩家加入 (初始化状态)
-    mc.listen("onJoin", function (player) {
-        const xuid = player.realName;
-        if (pvpConfig.get(xuid) === undefined) {
-            pvpConfig.set(xuid, false);
-        }
-    });
 
     // 4. 监听实体爆炸 (统一处理，优化版)
     mc.listen("onEntityExplode", (source, pos, radius, maxResistance, isDestroy, isFire) => {
@@ -1861,18 +1854,6 @@ function initFcamModule() {
             spl.simulateDisconnect();
         }
     });
-
-    // 监听玩家加入事件
-    mc.listen("onJoin", (pl) => {
-        let plname = pl.realName;
-        if (pl.isOP()) {
-            return;
-        }
-        pl.setGameMode(0)
-        setTimeout(() => {
-            mc.runcmdEx(`tp ${plname} ${plname + "_sp"}`)
-        }, 1000);
-    });
 }
 
 //维护模块
@@ -1923,13 +1904,12 @@ whcmd.setup()
 
 mc.listen("onPreJoin", (pl) => {
     // 检查模块是否启用
-    let currentConfig = conf.get("wh") || { EnableModule: true, status: 0 };
+    let currentConfig = conf.get("wh") || { EnableModule: true, status: 0 , whmotdmsg: "服务器维护中，请勿进入！", whgamemsg: "服务器正在维护中，请您稍后再来!"};
     if (!currentConfig.EnableModule) return;
-    
     if (pl.isSimulatedPlayer()) return;
     if (pl.isOP()) return;
     if (Maintenance.isActive) {
-        pl.kick(lang.get("weihu.msg"));
+        pl.kick(currentConfig.whgamemsg);            
     }
 })
 
@@ -2013,7 +1993,6 @@ moneygui.setup()
 
 function MoneyGui(plname){
     let pl = mc.getPlayer(plname)
-    let target = mc.getPlayer(plname)
     if(!pl) return
 
     let fm = mc.newSimpleForm()
@@ -2319,8 +2298,8 @@ const EconomyManager = {
     getScoreboard: () => conf.get("Scoreboard") || "money",
     isLLMoney: () => !!conf.get("LLMoney"),
     
-    checkAndReduce: function(playerName, amount) {
-        const player = mc.getPlayer(playerName);
+    checkAndReduce: function(playerXuid, amount) {
+        const player = mc.getPlayer(playerXuid);
         if (!player) return false;
         
         if (this.isLLMoney()) {
@@ -2869,10 +2848,10 @@ deathlistcmd.setCallback((cmd, ori, out, res) => {
     
     pl.tell("§6=== 您的死亡点列表 ===");
     playerDeathPoints.forEach((point, index) => {
-        pl.tell(`§e死亡点 ${index + 1}`);
-        pl.tell(`§7坐标： ${point.pos.x}, ${point.pos.y}, ${point.pos.z}`);
-        pl.tell(`§7维度： ${point.dimension}`);
-        pl.tell(`§7时间： ${point.time}`);
+        pl.tell(`§e死亡点 ${index + 1}：`);
+        pl.tell(`§7坐标：${point.pos.x}, ${point.pos.y}, ${point.pos.z}`);
+        pl.tell(`§7维度：${point.dimension}`);
+        pl.tell(`§7时间：${point.time}`);
         pl.tell("§7-------------------");
     });
 })
@@ -2890,10 +2869,10 @@ function clearDeathPoints(playerName) {
 
 // 获取玩家死亡点列表的函数
 function getPlayerDeathPoints(playerName) {
-    let pl = mc.getPlayer(plxuid);
+    let pl = mc.getPlayer(playerName);
     if (!pl) return logger.error(`未找到 ${playerName} 玩家`);
     let playerXuid = pl.xuid;
-    return deathPoints[playerName] || [];
+    return deathPoints[playerXuid] || [];
 }
 let homegui = mc.newCommand("home","家园系统",PermType.Any)
 homegui.overload([])
@@ -3012,7 +2991,7 @@ function AddHome(plxuid){
             if(data[3] == "" || !data[3]) return pl.tell(info + lang.get("home.name.noinput"));
             let pldata = homedata.get(pl.xuid)
             if(Object.keys(pldata).includes(data[3])) return pl.tell(info + lang.get("home.name.repetitive"));
-            if (!EconomyManager.checkAndReduce(pl.realName, cost)) return showInsufficientMoneyGui(pl, cost, "home");
+            if (!EconomyManager.checkAndReduce(pl.xuid, cost)) return showInsufficientMoneyGui(pl, cost, "home");
             pldata[data[3]] = {
                 "x":JSON.parse(pl.pos.x).toFixed(1),
                 "y":JSON.parse(pl.pos.y).toFixed(1),
