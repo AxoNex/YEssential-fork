@@ -2717,11 +2717,11 @@ let deathPoints = {};
 
 // 监听玩家死亡事件记录死亡点
 mc.listen("onPlayerDie", function(pl, src) {
-    let playerName = pl.xuid;
+    let playerXuid = pl.xuid;
     
     // 初始化玩家死亡点数组
-    if (!deathPoints[playerName]) {
-        deathPoints[playerName] = [];
+    if (!deathPoints[playerXuid]) {
+        deathPoints[playerXuid] = [];
     }
     
     // 修复：使用玩家当前位置作为死亡位置，而不是lastDeathPos
@@ -2741,11 +2741,11 @@ mc.listen("onPlayerDie", function(pl, src) {
     };
     
     // 添加到数组开头（最新的在前面）
-    deathPoints[playerName].unshift(deathRecord);
+    deathPoints[playerXuid].unshift(deathRecord);
     
     // 只保留最近3个死亡点
-    if (deathPoints[playerName].length > 3) {
-        deathPoints[playerName] = deathPoints[playerName].slice(0, 3);
+    if (deathPoints[playerXuid].length > 3) {
+        deathPoints[playerXuid] = deathPoints[playerXuid].slice(0, 3);
     }
     
     pl.tell(info + lang.get("back.helpinfo"));
@@ -2799,7 +2799,7 @@ function BackGUI(plxuid) {
         }
         
         // 重新获取死亡点数据，确保数据最新
-        let currentDeathPoints = deathPoints[pl.realName];
+        let currentDeathPoints = deathPoints[pl.xuid];
         if (!currentDeathPoints || currentDeathPoints.length === 0) {
             return pl.tell(info + "§c死亡点数据已失效！");
         }
