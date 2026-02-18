@@ -24,7 +24,8 @@ const NAME = `YEssential`;
 const PluginInfo =`基岩版多功能基础插件 `;
 const version = "2.9.4";
 const regversion =[2,9,4];
-const info = "§l§6[-YEST-] §r";
+// const info = "§l§6[-YEST-] §r";
+const info = "§l§b[C] §r";
 const offlineMoneyPath = datapath+"/Money/offlineMoney.json";
 // 提取默认语言对象 ,调用示例： pl.tell(info + lang.get("x.x"));
 // 创建语言文件（如果不存在）      
@@ -258,7 +259,8 @@ const defaultLangContent = {
     "crash.player.ok": "成功把玩家崩溃了！",
     "crash.player.client": "§c使玩家客户端崩溃",
     "carsh.function.list": "§c崩溃功能如下",
-    "stop.msg": "服务器关闭\n请稍后再来",
+    // "stop.msg": "服务器关闭\n请稍后再来",
+    "stop.msg": "§4§l错误\n§b服务器正重启/关闭，详情请看群\n§7(若未在群内通知原因，请咨询服务器管理)",
     "pls.input.notice": "请输入公告内容，（换行用 \\n）",
     "gamerule.KeepInventory.true": "死亡不掉落已启用",
     "cannot.create.newfile": "无法创建数据存储对象",
@@ -1386,7 +1388,7 @@ mc.listen("onJoin",(pl)=>{
    try {
         setTimeout(() => {
         // 初始化玩家数据
-        homedata.init(pl.realName, {});
+        homedata.init(pl.xuid, {});
         rtpdata.init(pl.realName, {});
         MoneyHistory.init(pl.realName, {});
         // 初始化金币
@@ -1428,9 +1430,9 @@ suicidecmd.overload([])
 suicidecmd.setCallback((cmd,ori,out,res)=>{
     let pl = ori.player
     if(!conf.get("LLMoney")){
-            if(!smartMoneyCheck(pl.realName,conf.get("suicide"))) return pl.tell(info + lang.get("money.no.enough"));
+            if(!smartMoneyCheck(pl.xuid,conf.get("suicide"))) return pl.tell(info + lang.get("money.no.enough"));
     }else{
-            if(!smartMoneyCheck(pl.realName,conf.get("suicide"))) return pl.tell(info + lang.get("money.no.enough"));
+            if(!smartMoneyCheck(pl.xuid,conf.get("suicide"))) return pl.tell(info + lang.get("money.no.enough"));
     }
     pl.tell(info + lang.get("suicide.kill.ok"));
     pl.kill()
@@ -1715,10 +1717,10 @@ function initFcamModule() {
 
         // 费用判断
         if (!conf.get("LLMoney")) {
-            if (!smartMoneyCheck(pl.realName, FcamCost))
+            if (!smartMoneyCheck(pl.xuid, FcamCost))
                 return pl.tell(info + lang.get("money.no.enough"));
         } else {
-            if (!smartMoneyCheck(pl.realName, FcamCost))
+            if (!smartMoneyCheck(pl.xuid, FcamCost))
                 return pl.tell(info + lang.get("money.no.enough"));
         }
 
@@ -1923,11 +1925,11 @@ mc.listen("onPreJoin", (pl) => {
     // 检查模块是否启用
     let currentConfig = conf.get("wh") || { EnableModule: true, status: 0 };
     if (!currentConfig.EnableModule) return;
+    
     if (pl.isSimulatedPlayer()) return;
     if (pl.isOP()) return;
     if (Maintenance.isActive) {
-        const whConfig = conf.get("wh");
-        pl.kick(whConfig.whgamemsg);
+        pl.kick(lang.get("weihu.msg"));
     }
 })
 
@@ -2715,7 +2717,7 @@ let deathPoints = {};
 
 // 监听玩家死亡事件记录死亡点
 mc.listen("onPlayerDie", function(pl, src) {
-    let playerName = pl.realName;
+    let playerName = pl.xuid;
     
     // 初始化玩家死亡点数组
     if (!deathPoints[playerName]) {
@@ -2754,15 +2756,15 @@ backcmd.overload([])
 backcmd.setCallback((cmd, ori, out, res) => {
     let pl = ori.player
     if (!pl) return out.error(lang.get("warp.only.player"))
-    BackGUI(pl.realName)
+    BackGUI(pl.xuid)
 })
 backcmd.setup()
 
-function BackGUI(plname) {
-    let pl = mc.getPlayer(plname)
+function BackGUI(plxuid) {
+    let pl = mc.getPlayer(plxuid)
     if (!pl) return
     
-    let playerDeathPoints = deathPoints[pl.realName];
+    let playerDeathPoints = deathPoints[pl.xuid];
     if (!playerDeathPoints || playerDeathPoints.length === 0) {
         return pl.tell(info + lang.get("back.list.Empty"));
     }
@@ -2825,9 +2827,9 @@ function BackGUI(plname) {
         
         // 检查金钱
         if (!conf.get("LLMoney")) {
-            if (!smartMoneyCheck(pl.realName, conf.get("Back"))) return pl.tell(info + lang.get("money.no.enough"));
+            if (!smartMoneyCheck(pl.xuid, conf.get("Back"))) return pl.tell(info + lang.get("money.no.enough"));
         } else {
-            if (!smartMoneyCheck(pl.realName, conf.get("Back"))) return pl.tell(info + lang.get("money.no.enough"));
+            if (!smartMoneyCheck(pl.xuid, conf.get("Back"))) return pl.tell(info + lang.get("money.no.enough"));
         }
         
         // 传送到选择的死亡点
@@ -2860,17 +2862,17 @@ deathlistcmd.setCallback((cmd, ori, out, res) => {
     let pl = ori.player
     if (!pl) return out.error(lang.get("warp.only.player"))
     
-    let playerDeathPoints = deathPoints[pl.realName];
+    let playerDeathPoints = deathPoints[pl.xuid];
     if (!playerDeathPoints || playerDeathPoints.length === 0) {
         return pl.tell(info + lang.get("back.list.Empty"));
     }
     
     pl.tell("§6=== 您的死亡点列表 ===");
     playerDeathPoints.forEach((point, index) => {
-        pl.tell(`§e死亡点 ${index + 1}：`);
-        pl.tell(`§7坐标：${point.pos.x}, ${point.pos.y}, ${point.pos.z}`);
-        pl.tell(`§7维度：${point.dimension}`);
-        pl.tell(`§7时间：${point.time}`);
+        pl.tell(`§e死亡点 ${index + 1}`);
+        pl.tell(`§7坐标： ${point.pos.x}, ${point.pos.y}, ${point.pos.z}`);
+        pl.tell(`§7维度： ${point.dimension}`);
+        pl.tell(`§7时间： ${point.time}`);
         pl.tell("§7-------------------");
     });
 })
@@ -2878,13 +2880,19 @@ deathlistcmd.setup()
 
 // 添加清理死亡点数据的函数
 function clearDeathPoints(playerName) {
-    if (deathPoints[playerName]) {
-        delete deathPoints[playerName];
+    let pl = mc.getPlayer(plxuid);
+    if (!pl) return logger.error(`未找到 ${playerName} 玩家`);
+    let playerXuid = pl.xuid;
+    if (deathPoints[playerXuid]) {
+        delete deathPoints[playerXuid];
     }
 }
 
 // 获取玩家死亡点列表的函数
 function getPlayerDeathPoints(playerName) {
+    let pl = mc.getPlayer(plxuid);
+    if (!pl) return logger.error(`未找到 ${playerName} 玩家`);
+    let playerXuid = pl.xuid;
     return deathPoints[playerName] || [];
 }
 let homegui = mc.newCommand("home","家园系统",PermType.Any)
@@ -2906,13 +2914,13 @@ homegui.setCallback((cmd,ori,out,res)=>{
         
         switch(id){
             case 0:
-                TpHome(pl.realName)
+                TpHome(pl.xuid)
                 break
             case 1:
-                AddHome(pl.realName)
+                AddHome(pl.xuid)
                 break
             case 2:
-                DelHome(pl.realName)
+                DelHome(pl.xuid)
                 break
     
         }
@@ -2920,15 +2928,15 @@ homegui.setCallback((cmd,ori,out,res)=>{
 })
 homegui.setup()
 
-function TpHome(plname){
-    let pl = mc.getPlayer(plname)
+function TpHome(plxuid){
+    let pl = mc.getPlayer(plxuid)
     if(!pl) return
     let cost = conf.get("Home").tp
     let fm = mc.newSimpleForm()
     fm.setTitle(lang.get("home.tp"))
     fm.setContent(lang.get("home.tp.choose"))
     let lst = []
-    let pldata = homedata.get(pl.realName)
+    let pldata = homedata.get(pl.xuid)
     for(let i in pldata){
         lst.push(i)
         fm.addButton(i+"\n坐标："+pldata[i].x+","+pldata[i].y+","+pldata[i].z+" "+transdimid[pldata[i].dimid])
@@ -2953,15 +2961,15 @@ function TpHome(plname){
     })
 }
 
-function DelHome(plname){
-    let pl = mc.getPlayer(plname)
+function DelHome(plxuid){
+    let pl = mc.getPlayer(plxuid)
     if(!pl) return
     let cost = conf.get("Home").del
     let fm = mc.newSimpleForm()
     fm.setTitle(lang.get("home.del"))
     fm.setContent(lang.get("home.del.choose"))
     let lst = []
-    let pldata = homedata.get(pl.realName)
+    let pldata = homedata.get(pl.xuid)
     for(let i in pldata){
         lst.push(i)
         fm.addButton(i+"\n坐标："+pldata[i].x+","+pldata[i].y+","+pldata[i].z+" "+transdimid[pldata[i].dimid])
@@ -2978,20 +2986,20 @@ function DelHome(plname){
             if(data == null) return pl.tell(info + lang.get("gui.exit"));
             if (!EconomyManager.checkAndReduce(pl.realName, cost)) return showInsufficientMoneyGui(pl, cost, "home");
             delete pldata[lst[id]]
-            homedata.set(pl.realName,pldata)
+            homedata.set(pl.xuid,pldata)
             pl.sendText(info+"删除家 "+lst[id]+" 成功！")
             
     })
     })
 }
 
-function AddHome(plname){
-    let pl = mc.getPlayer(plname)
+function AddHome(plxuid){
+    let pl = mc.getPlayer(plxuid)
     if(!pl) return
     let cost = conf.get("Home").add
 
     let HomeCount = conf.get("Home").MaxHome
-    let pldata = homedata.get(pl.realName)
+    let pldata = homedata.get(pl.xuid)
     if(Object.keys(pldata).length >= HomeCount) return pl.sendText(info+"您的家数量已达到上限值:"+HomeCount+"!")
         let fm = mc.newCustomForm()
         fm.setTitle(lang.get("home.add"))
@@ -3002,7 +3010,7 @@ function AddHome(plname){
         pl.sendForm(fm,(pl,data)=>{
             if(data == null) return pl.runcmd("home")
             if(data[3] == "" || !data[3]) return pl.tell(info + lang.get("home.name.noinput"));
-            let pldata = homedata.get(pl.realName)
+            let pldata = homedata.get(pl.xuid)
             if(Object.keys(pldata).includes(data[3])) return pl.tell(info + lang.get("home.name.repetitive"));
             if (!EconomyManager.checkAndReduce(pl.realName, cost)) return showInsufficientMoneyGui(pl, cost, "home");
             pldata[data[3]] = {
@@ -3011,7 +3019,7 @@ function AddHome(plname){
                 "z":JSON.parse(pl.pos.z).toFixed(1),
                 "dimid":JSON.parse(pl.pos.dimid)
             }
-            homedata.set(pl.realName,pldata)
+            homedata.set(pl.xuid,pldata)
             pl.sendText(info+"添加家："+data[3]+" 成功！")
 
         })
@@ -3549,8 +3557,8 @@ asyncRtpCmd.setCallback(async (cmd, ori, out, res) => {
 });
 asyncRtpCmd.setup();
 //经济检查模块
-function smartMoneyCheck(plname, value) {
-    const pl = mc.getPlayer(plname);
+function smartMoneyCheck(plxuid, value) {
+    const pl = mc.getPlayer(plxuid);
     if (!pl) return false;
     const isLLMoney = conf.get("LLMoney") !== 0;
     const scoreboard = conf.get("Scoreboard") || "money";
