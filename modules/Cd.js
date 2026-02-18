@@ -2,11 +2,13 @@
 // v2.7.5 - 修复删除菜单退出问题，补全删除按钮和编辑菜单功能
 
 // ==================== 常量定义 ====================
-const info = "§l§6[-YEST-] §r";
+// const info = "§l§6[-YEST-] §r";
+const info = "§l§3[M] §r";
 const MENU_CONFIG = {
     configPath: "./plugins/YEssential/Config/Cd/Config.json",
     menusPath: "./plugins/YEssential/data/Menus/",
-    prefix: "§e§l[菜单] §r",
+    // prefix: "§e§l[菜单] §r",
+    prefix: "§l§3[M] §r",
     mobileOS: ["Android", "iOS"],
     shieldBlocks: [
         "minecraft:ender_chest", "minecraft:stonecutter_block", "minecraft:anvil",

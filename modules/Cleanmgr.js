@@ -26,8 +26,8 @@ var CleanMgr = (function () {
 
   /* ================= 默认语言 ================= */
   var DEFAULT_LANG = {
-    prefix: "§l§6[-YEST-] §l§e[清理系统] §r",
-    toast_title: "§l§6[-YEST-] §l§e[清理系统] §r",
+    prefix: "§l§4[D] §r",
+    toast_title: "§l§e清理系统 §r",
     messages: {
       system_starting: "§a清理系统正在启动...",
       config_loaded: "§a配置文件加载完成",

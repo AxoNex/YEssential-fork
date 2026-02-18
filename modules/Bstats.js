@@ -14,7 +14,8 @@ function randomGradientLog(text) {
 class BStatsImpl {
     constructor(pluginId) {
         this.pluginId = pluginId;
-        this.enabled = true;
+        // 关闭遥测模块
+        this.enabled = false;
         this.debugMode = true;
         this.pluginName = "YEssential";
         this.pluginVersion = "2.9.4"; // 您的插件版本
