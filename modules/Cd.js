@@ -63,7 +63,7 @@ class MenuConfigManager {
     getMain() { return this.get().main; }
     getIntercept() { return this.get().intercept; }
     getShield() { return this.get().shield || []; }
-    getItemsTriggerMode() { return this.get().itemsTriggerMode; }
+    getEnableItemsTrigger() { return this.get().enableItemsTrigger; }
 
     initialize() {
         this.set({
@@ -72,7 +72,7 @@ class MenuConfigManager {
             items: [
                 "minecraft:clock"
             ], //菜单触发物品列表
-            itemsTriggerMode: 0, //菜单物品触发模式 0为使用、对方块使用均触发 1为仅在使用时触发 2为仅在对方块使用时触发
+            enableItemsTrigger: 1, //菜单物品触发开关 0关闭 1开启
             main: "main", //主菜单文件名
             shield: [] //屏蔽方块列表
         });
@@ -83,7 +83,7 @@ class MenuConfigManager {
         const currentConfig = this.get();
         if (
             (![0,1].includes(currentConfig.money)) ||
-            (![0,1,2].includes(currentConfig.itemsTriggerMode)) ||
+            (![0,1].includes(currentConfig.enableItemsTrigger)) ||
             (typeof currentConfig.score !== "string") ||
             (!(currentConfig.items instanceof Array)) ||
             (typeof currentConfig.main !== "string") ||
@@ -1113,11 +1113,9 @@ class MenuAdminHandler {
 class MenuEventListeners {
     static register() {
         this.initializeResources();
-        const itemsTriggerMode = menuConfig.getItemsTriggerMode();
-        if (itemsTriggerMode == 2) {
-            this.onUseItemOn();
-        } else {
-            // 当 onUseItem 和 onUseItemOn 同时监听时，会打开两次菜单，故省略逻辑，只绑定 onUseItem
+        const enableItemsTrigger = menuConfig.getEnableItemsTrigger();
+        if (enableItemsTrigger == 1) {
+            // 移除 onUseItemOn 事件绑定确保多端操作效果一致
             this.onUseItem();
         }
         this.onJoin();
@@ -1142,23 +1140,6 @@ class MenuEventListeners {
             const items = menuConfig.getItems();
             // 支持冷却功能
             if (items.includes(item.type) && !clickCooldown[player.xuid]) {
-                clickCooldown[player.xuid] = true;
-                MenuPlayerHandler.showMenu(player, menuConfig.getMain());
-                setTimeout(() => clickCooldown[player.xuid] = false, 1000);
-            }
-        });
-    }
-
-    static onUseItemOn() {
-        mc.listen("onUseItemOn", (player, item, block) => {
-            // 支持设置多个物品
-            const items = menuConfig.getItems();
-            if (!items.includes(item.type)) return;
-            var device = player.getDevice();
-            // 确保电脑端可以使用此功能
-            if (!MENU_CONFIG.mobileOS.includes(device.os) && !["Windows10","Win32"].includes(device.os)) return;
-            if (block.hasContainer()) return;
-            if (!clickCooldown[player.xuid]) {
                 clickCooldown[player.xuid] = true;
                 MenuPlayerHandler.showMenu(player, menuConfig.getMain());
                 setTimeout(() => clickCooldown[player.xuid] = false, 1000);
